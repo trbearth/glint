@@ -1,0 +1,12 @@
+#!/bin/sh
+# Portable exit-code adapter: glint-run codex exec "your prompt"
+set +e
+"$@"
+code=$?
+set -e
+source=${1##*/}
+status=success
+[ "$code" -eq 0 ] || status=failure
+payload=$(printf '{"exit_code":%s,"reason":"Process exited with status %s"}' "$code" "$code")
+printf '%s' "$payload" | "${GLINT_BIN:-glint}" hook "$source"
+exit "$code"

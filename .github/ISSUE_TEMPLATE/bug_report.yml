@@ -1,0 +1,20 @@
+name: Bug report
+description: Report a reproducible Glint problem
+body:
+  - type: textarea
+    attributes: {label: What happened?}
+    validations: {required: true}
+  - type: input
+    attributes: {label: macOS and Glint versions}
+    validations: {required: true}
+  - type: textarea
+    attributes: {label: Steps to reproduce}
+    validations: {required: true}
+  - type: textarea
+    attributes: {label: Agent and terminal/editor}
+  - type: checkboxes
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed project paths, prompts, secrets, and model output from logs.
+          required: true

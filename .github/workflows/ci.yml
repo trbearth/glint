@@ -1,0 +1,12 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh -n scripts/*.sh scripts/glint-run
+      - run: ./scripts/build-app.sh
+      - run: swift test --disable-sandbox
+      - run: plutil -lint Glint.app/Contents/Info.plist
+      - run: ./Glint.app/Contents/MacOS/glint --help

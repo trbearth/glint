@@ -1,0 +1,27 @@
+name: Release artifact
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/build-app.sh
+      - name: Ad-hoc sign development artifact
+        run: codesign --force --deep --sign - Glint.app
+      - name: Stage release bundle
+        run: |
+          mkdir Glint-release
+          cp -R Glint.app scripts README.md LICENSE CHANGELOG.md Glint-release/
+          rm -f Glint-release/scripts/build-app.sh
+      - run: ditto -c -k --sequesterRsrc --keepParent Glint-release Glint-macOS.zip
+      - uses: actions/upload-artifact@v4
+        with: {name: Glint-macOS, path: Glint-macOS.zip}
+      - name: Publish tagged draft
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with: {draft: true, files: Glint-macOS.zip, generate_release_notes: true}
