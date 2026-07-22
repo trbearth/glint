@@ -5,7 +5,7 @@ cd "$ROOT"
 APP="$ROOT/Glint.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-swiftc -O -whole-module-optimization -parse-as-library \
+swiftc -swift-version 5 -O -whole-module-optimization -parse-as-library \
   "$ROOT"/Sources/Glint/*.swift \
   -o "$APP/Contents/MacOS/glint" \
   -framework AppKit -framework SwiftUI
