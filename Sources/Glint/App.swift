@@ -13,9 +13,8 @@ import SwiftUI
         NSApp.setActivationPolicy(.accessory)
         try? GlintPaths.prepare()
         makeMenu()
-        timer = Timer.scheduledTimer(withTimeInterval: 0.55, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.poll() }
-        }
+        timer = Timer.scheduledTimer(timeInterval: 0.55, target: self,
+                                     selector: #selector(timerFired), userInfo: nil, repeats: true)
     }
 
     private func makeMenu() {
@@ -37,6 +36,7 @@ import SwiftUI
     @objc private func useDoneOnly() { setMode("doneOnly") }
     @objc private func useSteps() { setMode("steps") }
     @objc private func quit() { NSApp.terminate(nil) }
+    @objc private func timerFired() { poll() }
 
     private func setMode(_ mode: String) {
         panel.config.notificationMode = mode

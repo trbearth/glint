@@ -1,10 +1,10 @@
 import AppKit
 import SwiftUI
 
-@MainActor final class PanelController {
+@MainActor final class PanelController: NSObject {
     private var panel: NSPanel?
     private var closeWork: DispatchWorkItem?
-    private var activationObserver: NSObjectProtocol?
+    private var observingActivation = false
     private var shownAt = Date.distantPast
     private var originBundleIdentifier: String?
     var config = ConfigStore.load()
@@ -36,20 +36,12 @@ import SwiftUI
         panel.orderFrontRegardless(); self.panel = panel
         shownAt = Date()
         originBundleIdentifier = event.resolvedBundleIdentifier
-        if let activationObserver { NSWorkspace.shared.notificationCenter.removeObserver(activationObserver) }
-        activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                guard let self,
-                      Date().timeIntervalSince(self.shownAt) > 0.75,
-                      let expected = self.originBundleIdentifier,
-                      let activated = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-                      activated.bundleIdentifier == expected
-                else { return }
-                self.hide()
-            }
-        }
+        if observingActivation { NSWorkspace.shared.notificationCenter.removeObserver(self) }
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(applicationActivated(_:)),
+            name: NSWorkspace.didActivateApplicationNotification, object: nil
+        )
+        observingActivation = true
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         DispatchQueue.main.async {
             NSAnimationContext.runAnimationGroup { context in
@@ -68,9 +60,9 @@ import SwiftUI
 
     func hide() {
         guard let panel, let screen = panel.screen ?? NSScreen.main ?? NSScreen.screens.first else { return }
-        if let activationObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(activationObserver)
-            self.activationObserver = nil
+        if observingActivation {
+            NSWorkspace.shared.notificationCenter.removeObserver(self)
+            observingActivation = false
         }
         let left = config.position.contains("left")
         let targetX = left ? screen.visibleFrame.minX - panel.frame.width - 30 : screen.visibleFrame.maxX + 30
@@ -81,6 +73,15 @@ import SwiftUI
             if !reduceMotion { panel.animator().setFrameOrigin(NSPoint(x: targetX, y: panel.frame.minY)) }
             panel.animator().alphaValue = 0
         }, completionHandler: { panel.orderOut(nil) })
+    }
+
+    @objc private func applicationActivated(_ notification: Notification) {
+        guard Date().timeIntervalSince(shownAt) > 0.75,
+              let expected = originBundleIdentifier,
+              let activated = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+              activated.bundleIdentifier == expected
+        else { return }
+        hide()
     }
 }
 
